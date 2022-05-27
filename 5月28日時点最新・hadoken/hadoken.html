@@ -1,0 +1,44 @@
+<html lang="ja">
+    <head>
+        <meta charset="utf-8">
+<style>
+*{ margin: 0;padding: 0; }
+
+html,body {
+  height:100%;
+  /*added*display: flex;
+  /*added*justify-content: center;
+  /*added*align-items: center;
+  /*added*/background: #000;
+}
+#container{
+  /*height: 100%;
+  width: 100%;
+  background-color: #000;*/
+  /*added*/position: relative;
+}
+#video{ height: 100%;width: 100%; }
+
+#canvas{
+  position: absolute;
+  left: 0;
+  top: 0;
+  opacity: 1.0;
+  height:100%;
+}
+</style>
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js"></script>
+<script src="https://unpkg.com/three@0.137.4/build/three.min.js"></script>
+<script src="https://unpkg.com/three@0.137.4/examples/js/controls/OrbitControls.js"></script>
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+    </head>
+    <body>
+        <div id="container">
+            <video id="video" autoplay ></video>
+            <canvas id="canvas"></canvas>
+        </div>
+        <script src="hadoken.js"></script>
+    </body>
+</html>
