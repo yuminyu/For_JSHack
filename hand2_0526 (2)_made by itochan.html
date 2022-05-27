@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/control_utils/control_utils.js" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/three@0.137.4/build/three.min.js"></script>
+  <script src="https://unpkg.com/three@0.137.4/examples/js/controls/OrbitControls.js"></script>
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+
+</head>
+
+<body>
+  <div class="container" style="position: relative">
+    <video id="input_video" style="display:none"></video>
+    <canvas id="pipeCanvas" style="position: absolute" width="1000px" height="600px"></canvas>
+    <canvas id="threeCanvas" style="position: absolute" width="1000px" height="600px"></canvas>
+</div>
+
+  <script type="module">
+    const videoElement = document.getElementById('input_video');
+    const canvasElement = document.getElementById('pipeCanvas');
+    const canvasCtx = canvasElement.getContext('2d');
+    let hand_x = [];
+    let hand_y = [];
+    let hand = [];
+    var moneyhand = [];
+    var hadokenhand = [];
+    let res;
+
+    function onResults(results) {
+    //   canvasCtx.save();
+    //   canvasCtx.clearRect(0, 0, canvasElement.width, canvasElement.height);
+      canvasCtx.drawImage(
+          results.image, 0, 0, canvasElement.width, canvasElement.height);
+      if (results.multiHandLandmarks) {
+        for (const landmarks of results.multiHandLandmarks) {
+          drawConnectors(canvasCtx, landmarks, HAND_CONNECTIONS,
+                         {color: '#00FF00', lineWidth: 5});
+          drawLandmarks(canvasCtx, landmarks, {color: '#FF0000', lineWidth: 2});
+          res =results.multiHandLandmarks;
+          console.log(res);
+
+          // hand.push(res[0][0]);
+            
+           if((res[0] || res[1])&&(Math.abs(res[0][4].x - res[0][8].x)<0.03 && //少なくとも1つの手は存在し、かつ親指と人差し指の先が触れている（x軸・y軸ともに近い）状態
+                Math.abs(res[0][4].y - res[0][8].y)<0.03)){
+                    console.log("money");
+                    moneyhand = [res[0][9].x,res[0][9].y,res[0][9].z]; //中指の付け根位置を検出しmoneyhandとする
+                    console.log(moneyhand); 
+                }
+                
+             function abs(val) {
+                return val < 0 ? -val : val;
+              };
+              
+          if (res[0] && res[1]){
+              if(abs(res[0][8].x - res[1][8].x)<0.03 &&  //2つの手が画面上に存在し、かつ2つの手の人差し指の先同士が触れている（x軸・y軸ともに近い）状態
+                abs(res[0][8].y - res[1][8].y)<0.03){
+                    console.log("ET");
+                }   
+            }
+          
+            if (res[0] && res[1]){                        //2つの手が画面上に存在する
+              if(abs(res[0][0].x - res[1][0].x)<0.03 &&   //両手の付け根を合わせる
+                abs(res[0][8].y - res[1][8].y)>0.2 &&     //人差し指の先は離れている
+                abs(res[0][12].y - res[1][12].y)>0.2 &&   //中指の先は離れている
+                abs(res[0][16].y - res[1][16].y)>0.2 ){   //薬指の先は離れている
+                    console.log("HADOKEN");
+                    hadokenhand = [res[0][9].x,res[0][9].y,res[0][9].z]; //中指の付け根位置を検出してhadokenhandとする
+                    console.log(hadokenhand); 
+
+                }   
+            }
+
+
+            
+            // hand_y.push(res[0]);
+
+            //   if(hand_y.length >=3){
+            //   const h1 = hand_y[hand_y.length - 1];
+            //   const h3 = hand_y[hand_y.length - 3];
+
+            //   if((abs(h1[8].x - h1[0].x) < abs(h1[5].x - h1[0].x)*0.8)&&(abs(h1[8].y - h1[0].y) < abs(h1[5].y - h1[0].y))&&
+            //      (abs(h1[12].x - h1[0].x) < abs(h1[9].x - h1[0].x)*0.8)&&(abs(h1[12].y - h1[0].y) < abs(h1[9].y - h1[0].y))&&
+            //      (abs(h1[16].x - h1[0].x) < abs(h1[13].x - h1[0].x)*0.8)&&(abs(h1[16].y - h1[0].y) < abs(h1[13].y - h1[0].y))&&
+            //      (abs(h1[20].x - h1[0].x) < abs(h1[17].x - h1[0].x)*0.8)&&(abs(h1[20].y - h1[0].y) < abs(h1[17].y - h1[0].y))){
+            //       console.log("ぐー");
+            //      }
+            //     }            
+        
+        }
+      }
+      canvasCtx.restore();
+      
+      }
+    
+    
+    const hands = new Hands({locateFile: (file) => {
+      return `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`;
+    }});
+    
+    hands.setOptions({
+      maxNumHands: 2,
+      modelComplexity: 1,
+      minDetectionConfidence: 0.5,
+      minTrackingConfidence: 0.5
+    });
+
+    hands.onResults(onResults);
+    
+    const camera = new Camera(videoElement, {
+      onFrame: async () => {
+        await hands.send({image: videoElement});
+      },
+      width: 600,
+      height: 400
+    });
+
+    camera.start();
+    
+
+// ここからThree.jsのコード
+window.addEventListener("DOMContentLoaded", init);
+
+function init() {
+    const threeWidth = 1000;
+    const threeHeight = 600;
+    
+    // レンダラーを作成
+    // レンダラーを作成
+    const renderer = new THREE.WebGLRenderer({
+        canvas: document.querySelector("#threeCanvas"),
+        alpha:true,//背景は透明
+    });
+    renderer.setPixelRatio(window.devicePixelRatio);
+    renderer.setSize(threeWidth, threeHeight);
+
+    // シーンを作成
+    const scene = new THREE.Scene();
+
+    // カメラを作成
+    const threeCamera = new THREE.PerspectiveCamera(
+        45,  //画角
+        threeWidth / threeHeight, //アスペクト比
+        1, //描画開始距離
+        10000 //描画終了距離
+    );
+    threeCamera.position.set(0, 0, +1000);
+
+
+    // 箱を作成（メッシュという表示オブジェクトを使って作成する）
+    const geometry = new THREE.BoxGeometry(150, 150, 150); //ジオメトリ（形状）を設定
+    const material = new THREE.MeshStandardMaterial({  //マテリアル（材質）を設定
+        color: 0x0000ff //青色の箱
+    });
+    const box = new THREE.Mesh(geometry, material); //作成したジオメトリとマテリアルを使ってMesh関数でメッシュを作る
+   
+    scene.add(box); //メッシュをシーンに追加する
+
+    // 波動拳（最初は箱）を作成（メッシュという表示オブジェクトを使って作成する）
+    const geometry2 = new THREE.BoxGeometry(150, 150, 150); //ジオメトリ（形状）を設定
+    const material2 = new THREE.MeshStandardMaterial({  //マテリアル（材質）を設定
+            color: 0xff0000 //赤色の箱
+        });
+    const box2 = new THREE.Mesh(geometry2, material2); //作成したジオメトリとマテリアルを使ってMesh関数でメッシュを作る
+      
+    scene.add(box2); //メッシュをシーンに追加する
+
+
+
+
+    
+    // ライト1
+    const light1 = new THREE.DirectionalLight( //平行光源（一定方向から差し込む光）
+    0XFFFFFF   // 0XFFFFFF白色光
+    );
+    light1.position.set(0, 0, 1);   //光源が斜めから差し込むような位置にセット
+    // シーンに追加
+    scene.add(light1); //光源も機能させるにはシーンへの追加が必要
+
+   // 初回実行
+    tick();
+    // tick2();
+
+    function tick() {
+    console.log(moneyhand); 
+    console.log(res);
+    // 箱を回転させる
+    box.rotation.x += 0.05;
+    box.rotation.y += 0.05;
+
+    // レンダリング
+    renderer.render(scene, threeCamera);   //作成したシーンとカメラを引数に渡すとcanvas上に描かれる
+    requestAnimationFrame(tick); //グローバルメソッドの1つで、引数として渡された関数を毎フレーム実行する） 
+    box.position.set(moneyhand[0]*1000-500,moneyhand[1]*(-600)+300,moneyhand[2]*1); //handの座標軸をthree.jsの座標軸に変換
+    if(((res[0][4].x*1000-500)>480||(res[0][4].x*100-500)<-480) || ((res[0][4].y*(-600)+300)>280||(res[0][4].y*(-600)+300)<-280)){ //手の親指の先が画面のx/yいずれかの端にいったら）
+      box.position.set(-1000,-100,0);  //BOXをスクリーンアウトする
+    }
+
+
+  //   function tick2() {
+    console.log(hadokenhand); 
+    console.log(res);
+    // 箱を回転させる
+    box2.rotation.x += 0.10;
+    box2.rotation.y += 0.10;
+
+  //   // レンダリング
+  //   renderer.render(scene, threeCamera);   //作成したシーンとカメラを引数に渡すとcanvas上に描かれる
+  //   requestAnimationFrame(tick); //グローバルメソッドの1つで、引数として渡された関数を毎フレーム実行する） 
+    box2.position.set(hadokenhand[0]*1000-500,hadokenhand[1]*(-600)+300,hadokenhand[2]*1); //handの座標軸をthree.jsの座標軸に変換
+    if(((res[0][4].x*1000-500)>480||(res[0][4].x*100-500)<-480) || ((res[0][4].y*(-600)+300)>280||(res[0][4].y*(-600)+300)<-280)){ //手の親指の先が画面のx/yいずれかの端にいったら）
+      box2.position.set(-1000,-100,0);  //BOXをスクリーンアウトする
+    }
+  }  
+  // }
+
+ }
+
+
+
+    </script>
+    
+</body>
+</html>
